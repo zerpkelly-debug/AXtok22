@@ -1,19 +1,21 @@
-name: ATOK Headless 24/7 Bot
+name: ATOK 24/7 Auto Bot
 
 on:
-  workflow_dispatch: # এটি দেওয়ার কারণে আপনি বাটন চেপে ম্যানুয়ালি রান করতে পারবেন
+  push:
+    branches: [ "main", "master" ]
+  workflow_dispatch: # অ্যাকশনস ট্যাব থেকে ম্যানুয়ালি রান করার জন্য
   schedule:
-    - cron: '0 */5 * * *' # গিটহাব ৬ ঘণ্টা পর বন্ধ করে দেয়, তাই এটি প্রতি ৫ ঘণ্টা পর পর অটোমেটিক রিস্টার্ট করবে
+    - cron: '0 */5 * * *' # গিটহাবের ৬ ঘণ্টার লিমিট এড়াতে প্রতি ৫ ঘণ্টা পর পর অটো রিস্টার্ট হবে
 
 jobs:
-  run-bot:
-    runs-on: ubuntu-latest # গিটহাবের লিনাক্স সার্ভার ব্যবহার করবে
+  build:
+    runs-on: ubuntu-latest
 
     steps:
     - name: Checkout Repository
       uses: actions/checkout@v3
 
-    - name: Set up Python
+    - name: Set up Python 3.10
       uses: actions/setup-python@v4
       with:
         python-version: '3.10'
@@ -24,5 +26,4 @@ jobs:
         pip install requests urllib3
 
     - name: Run ATOK Bot
-      run: |
-        python main.py
+      run: python main.py
