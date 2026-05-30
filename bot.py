@@ -46,15 +46,14 @@ GOOGLE_HEADERS = {
 # =========================================================================
 
 def log_msg(email, msg):
-    """শুধুমাত্র নির্দিষ্ট মেসেজ প্রিন্ট করার জন্য ক্লিন লগার"""
+    """লগ প্রিন্ট করার ক্লিন ফাংশন (flush=True যুক্ত করা হয়েছে গিটহাবের জন্য)"""
     current_time = datetime.datetime.now().strftime('%H:%M:%S')
-    print(f"[{current_time}] [{email}] {msg}")
+    print(f"[{current_time}] [{email}] {msg}", flush=True)
 
 def load_accounts():
-    """accounts.txt থেকে UID এবং Email লোড করা"""
     accounts = []
     if not os.path.exists(ACCOUNT_FILE):
-        print(f"❌ '{ACCOUNT_FILE}' ফাইলটি পাওয়া যায়নি! দয়া করে ফাইলটি তৈরি করুন।")
+        print(f"❌ '{ACCOUNT_FILE}' ফাইলটি পাওয়া যায়নি!", flush=True)
         return accounts
         
     with open(ACCOUNT_FILE, "r", encoding="utf-8") as f:
@@ -69,24 +68,20 @@ def load_accounts():
     return accounts
 
 def get_dynamic_gma_url():
-    """গুগলের অ্যাড রিকুয়েস্ট প্যারামিটার র‍্যান্ডমাইজ করা"""
     req_id = str(random.randint(1000000000, 2000000000))
     seq_num = str(random.randint(20, 150))
     fbs_aeid = str(random.randint(1000000000000000000, 9000000000000000000))
     return GMA_URL_BASE.replace("{REQ_ID}", req_id).replace("{SEQ_NUM}", seq_num).replace("{FBS_AEID}", fbs_aeid)
 
 def get_atok_data(uid):
-    """Atok এর CHECKIN_AD JSON পেলোড"""
     now = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%f")
     data = {"key": f"{uid}{now}", "type": "CHECKIN_AD", "checkInSequence": 1}
     return urllib.parse.quote(json.dumps(data, separators=(',', ':')))
 
 def decode_html_content(html_str):
-    """VAST HTML ডিকোড"""
     return html_str.replace(r'\x3c', '<').replace(r'\x3e', '>').replace(r'\x3d', '=').replace(r'\x22', '"').replace(r'\x26', '&').replace(r'\x27', "'")
 
 def format_url(url, uid):
-    """লিংকের ম্যাক্রো ভ্যালু রিপ্লেস"""
     current_time_ms = str(int(time.time() * 1000))
     atok_cdata = get_atok_data(uid)
     
@@ -119,7 +114,6 @@ def get_video_duration(html):
     return 30.0
 
 def send_ad_pings(session, url_list, uid):
-    """গুগলের সার্ভারে ট্র্যাকিং সিগন্যাল পাঠানো (নীরবে)"""
     if not url_list: return False
     success = False
     for url in url_list:
@@ -133,7 +127,7 @@ def send_ad_pings(session, url_list, uid):
     return success
 
 # =========================================================================
-# 🤖 কোর বট ওয়ার্কার (Google Anti-Fraud Bypass) 🤖
+# 🤖 কোর বট ওয়ার্কার
 # =========================================================================
 def run_bot(account):
     uid = account['uid']
@@ -143,13 +137,11 @@ def run_bot(account):
     session = requests.Session()
     session.headers.update(GOOGLE_HEADERS)
 
-    # কাজ শুরুর লগ
     log_msg(email, "রিওয়ার্ড যুক্ত করার বট চালু হয়েছে")
 
     while success_count < REWARD_LIMIT_PER_ACCOUNT:
         dynamic_url = get_dynamic_gma_url()
         try:
-            # 1. Fetch Ad
             response = session.get(dynamic_url, verify=False, timeout=15)
             if response.status_code != 200:
                 time.sleep(5)
@@ -181,7 +173,7 @@ def run_bot(account):
             ad_duration = get_video_duration(ad_html)
             split_time = ad_duration / 4.0
 
-            # 2. Pings & Watch Time Simulation
+            # Pings & Watch Time Simulation
             send_ad_pings(session, fill_urls, uid)
             send_ad_pings(session, impression_urls, uid)
             send_ad_pings(session, impression_xml, uid)
@@ -206,7 +198,7 @@ def run_bot(account):
 
             time.sleep(2)
             
-            # 3. Request Reward
+            # Request Reward
             if send_ad_pings(session, reward_urls, uid):
                 success_count += 1
                 
@@ -224,40 +216,36 @@ def run_bot(account):
     log_msg(email, "এই অ্যাকাউন্টের লিমিট শেষ হয়েছে, বট বন্ধ হচ্ছে।")
 
 # =========================================================================
-# কিউ (Queue) ভিত্তিক মাল্টি-থ্রেডিং ম্যানেজার
+# মাল্টি-থ্রেডিং ম্যানেজার
 # =========================================================================
 def worker_thread(q):
-    """ওয়ার্কার থ্রেড যা কিউ থেকে অ্যাকাউন্ট নেবে এবং কাজ করবে"""
     while not q.empty():
         try:
             account = q.get_nowait()
         except queue.Empty:
             break
         
-        # বট রান করানো
         run_bot(account)
         q.task_done()
 
 def main():
-    print("="*60)
-    print("🚀 ATOK PRO MULTI-BOT V3 (HEADLESS / 24/7 MODE) 🚀")
-    print("="*60)
+    print("="*60, flush=True)
+    print("🚀 ATOK PRO MULTI-BOT V3 (HEADLESS / 24/7 MODE) 🚀", flush=True)
+    print("="*60, flush=True)
     
     accounts = load_accounts()
     if not accounts:
-        print("❌ স্ক্রিপ্ট বন্ধ হচ্ছে।")
+        print("❌ স্ক্রিপ্ট বন্ধ হচ্ছে।", flush=True)
         return
         
-    print(f"✅ মোট {len(accounts)} টি অ্যাকাউন্ট লোড করা হয়েছে।")
-    print(f"✅ একসাথে {MAX_CONCURRENT_BOTS} টি অ্যাকাউন্ট চলবে।")
-    print("="*60)
+    print(f"✅ মোট {len(accounts)} টি অ্যাকাউন্ট লোড করা হয়েছে।", flush=True)
+    print(f"✅ একসাথে {MAX_CONCURRENT_BOTS} টি অ্যাকাউন্ট চলবে।", flush=True)
+    print("="*60, flush=True)
 
-    # সব অ্যাকাউন্ট কিউ-তে রাখা হচ্ছে
     q = queue.Queue()
     for acc in accounts:
         q.put(acc)
 
-    # লিমিট অনুযায়ী থ্রেড তৈরি করা
     threads = []
     num_threads = min(MAX_CONCURRENT_BOTS, len(accounts))
     
@@ -265,15 +253,14 @@ def main():
         t = threading.Thread(target=worker_thread, args=(q,))
         t.start()
         threads.append(t)
-        time.sleep(0.5) # থ্রেডগুলোর শুরুর মধ্যে হালকা গ্যাপ
+        time.sleep(0.5)
         
-    # সব কাজ শেষ হওয়ার জন্য অপেক্ষা করা
     for t in threads:
         t.join()
         
-    print("="*60)
-    print("🎉 সব অ্যাকাউন্টের কাজ সফলভাবে সম্পন্ন হয়েছে!")
-    print("="*60)
+    print("="*60, flush=True)
+    print("🎉 সব অ্যাকাউন্টের কাজ সফলভাবে সম্পন্ন হয়েছে!", flush=True)
+    print("="*60, flush=True)
 
 if __name__ == "__main__":
     main()
