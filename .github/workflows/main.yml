@@ -1,26 +1,30 @@
-name: 24/7 ATOK Reward Bot
+name: ATOK 24/7 Auto Bot
 
 on:
-  workflow_dispatch:  # ম্যানুয়ালি রান করার জন্য
+  workflow_dispatch: # ম্যানুয়ালি রান করার জন্য
   schedule:
-    - cron: "0 */5 * * *"  # প্রতি ৫ ঘণ্টা পরপর অটো রান হবে (গিটহাবের লিমিট বাইপাস করতে)
+    - cron: '0 */5 * * *' # প্রতি ৫ ঘণ্টা পর পর অটোমেটিক চলবে
 
 jobs:
   run-bot:
     runs-on: ubuntu-latest
-
+    
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      - name: Set up Python
+      - name: Setup Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.10'
 
-      - name: Install Requirements
+      - name: Install dependencies
         run: |
+          python -m pip install --upgrade pip
           pip install requests urllib3
 
       - name: Run ATOK Bot
-        run: python bot.py
+        env:
+          PYTHONUNBUFFERED: "1"  # এই লাইনটি গিটহাবে লাইভ লগ দেখানোর ম্যাজিক
+        run: |
+          python bot.py
