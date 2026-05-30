@@ -25,6 +25,6 @@ jobs:
 
       - name: Run ATOK Bot
         env:
-          PYTHONUNBUFFERED: "1"  # এই লাইনটি গিটহাবে লাইভ লগ দেখানোর ম্যাজিক
+          PYTHONUNBUFFERED: "1"  # গিটহাবে লাইভ লগ দেখার জন্য
         run: |
           python bot.py
