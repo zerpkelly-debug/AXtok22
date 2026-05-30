@@ -9,38 +9,26 @@ import urllib3
 import random
 import queue
 import os
-import re
-from concurrent.futures import ThreadPoolExecutor
 
+# SSL ওয়ার্নিং বন্ধ করা
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-# =========================================================================
+# ==========================================
 # ⚙️ কনফিগারেশন প্যানেল ⚙️
 # =========================================================================
 
-ACCOUNT_FILE = "accounts.txt"             
-PROXY_FILE = "proxies.txt"                # প্রক্সি ফাইল (খুবই জরুরি গিটহাবের জন্য)
-MAX_CONCURRENT_BOTS = 20                  
-REWARD_LIMIT_PER_ACCOUNT = 1000           
-MIN_AD_DELAY = 3                          
-MAX_AD_DELAY = 7                          
+ACCOUNT_FILE = "accounts.txt"             # আপনার অ্যাকাউন্টের টেক্সট ফাইল
+PROXY_FILE = "proxies.txt"                # প্রক্সি ফাইল (গিটহাবে আইপি ব্লক এড়াতে)
+MAX_CONCURRENT_BOTS = 20                  # একসাথে ২০টি অ্যাকাউন্ট চলবে
+REWARD_LIMIT_PER_ACCOUNT = 1000           # প্রতি অ্যাকাউন্টে ১০০০ লিমিট
 
-GMA_URL_BASE = "https://googleads.g.doubleclick.net/mads/gma?submodel=sdk_gphone64_x86_64&adid_p=1&format=interstitial_mb&ini_pn=com.android.vending&ins_pn=com.android.vending&omid_v=a.1.5.2-google_20241009&client_purpose_one=true&dv=260480602&ev=23.6.0&gl=US&hl=en&js=afma-sdk-a-v260480999.244410000.1&lv=244410203&ms=CpgECoACKrBM0xB65xLcfKKUUNBRdQrRSSnKM5q33W3Rno1x7YXgQuyO29TZiieb9JHljSFyu3KaBD1cWyc5znE8zlF6grRJH4yzHz1M98-phMmdIeEPh7D2sR8hnkzi2v9526ZCvu0f5hnAuMwQcMH1EPA4tau9YROnTy3tMxLeQ2_YHxMMKWnbHD7DaItGYZpWUlNsJfnMhF9yVtIjcwiwRQshGpcTmM0ej1VO19P7ftW_kNnuMo99cuw_tejLzuKWBYFdepUFMdn8ve8sEshCSK_3ImHeln9JfRnFJ1vuVoPi1BxweXtJiCa9qY9o4sf-uWIm0aXlC2FcB0ibUr7qa2t-FAqAAh7NaFqVfQdJyoFCJWZUV7EGKmR8M-gSWzTHFNyUk4uif0z7EkZpHl4y78aHe_xfB8xwsqvl80VURdp1nRMa0MftZdgyPowdUbI9CyABv1VYHH_aP1AXwLJBKwjZxRux4Iz77UCMm1x0NmwhLPnlXJeFKC-329jAY4lHjcZ4DFczMFtt8j_vhO93rOusW_Ol7Q2uZGd_Um0CT1uV46o8bVSqZc35w_49SqGqiUKCayLq7uSGxv8-AqB-IsrVecNu9JIpCURFXVMRLcw8fbJP6xZ1ttzsjvgfvXBOKt1wpHJu-TArTBoTAxNBgY0ruKSpNVCzDkT_aYb9nCn3Y9-odIoSEO96QPNdRUBSHYFCwCc2GnQSmAQKgAKG9kguj6rc6JnqClGA11qHVt_GjKrOg_sjpO-CyHbF9iD-SflvbjkSb5mr65ZI-O1cCE4rj1EGGNQI9gobZLFvb07g_L88JpPZ_0HRCpNoVlgxr_TFYh5tufV7TCbHNFaVl9UWzBqvgbNr-4Vu_cAz0yJF3r2LA61fcDIXdhBIUqBcQfetYAzeoez4X_LYcgzYHV6DCODckYfj5BCj70-XyFXJh4Z-HhzQj6U5gD-1Cqt_Wz2Rr8GyUdzXRd_qtE7vek6OaMtTpjGzPy34dU6c1dlh_Gy9uT-iTylH_CU9KZoH39IFDnlCMsBwYI3jlPTAxfx56ToTIil_pFJnF73kCoACijWeZL6EluqVgSuoE5qUsRmlMTigQgSmQEsm6A96GxWTSu5OAthr8EfdF5pX1VZ1z7cYv7g6OWKT_M-F9H1atRx8e-qqwCoHWvQkMvW_7Lg8Sw7qaqDBDzbJ_L-YAhOKXaMw9gi0iSb_lc1mXqDXjOlYUutk0CVMCBJw951F-qEnGXRhAQyqG0y0BB6p7_lM9Bx5H8DRcjUzpUx69GjseaXdtSFn7zZTN1ufGjfdh4naxAyrcPwo6D3PpVSOFlMJkCmFXGnJzL8RgRpXwfuI91PzaW0YzKi2Y8rRzz0Us4iP99wHnmpsH2PecUDuISmahD-NfQCxUK5PFCgzmZ6CnRIQOO-0XSf0RqHDthMq1aBNLg&mv=85152130.com.android.vending&lft=1&vnm=1.2.5&plbs=0&plcs=0&risd=1&u_sd=2&request_id={REQ_ID}&sam_b=0&sam_l=0&sam_r=0&sam_t=0&target_api=35&carrier=310260&request_agent=Flutter-GMA-5.3.1&fbs_aeid={FBS_AEID}&fbs_aiid=ed84d026b2efb0c47b9e7545b45685cf&seq_num={SEQ_NUM}&eid=318500618%2C318486317%2C318491267%2C95391602%2C318503826%2C318527161%2C318528038%2C318528076%2C95388545%2C318483611%2C318484496%2C318484801%2C318526145%2C318526849%2C318527070&guci=0.0.0.0.0.0.0.0&adtest=on&sdk_apis=7%2C8&omid_p=Google%2Fafma-sdk-a-v260480999.244410000.1&u_w=360&u_h=640&msid=com.m2e.mobile&an=123.android.com.m2e.mobile&dvoln=1&u_audio=4&net=wi&u_so=p&rbv=1&loeid=44766145%2C318502621&preqs_in_session=30&preqs=30&time_in_session=2435490&pcc=0&dload=3593&sst=1780127340000&output=html&region=mobile_app&u_tz=360&client=ca-app-pub-9027478617840640&slotname=9273929755&gsb=wi&apm_app_id=1%3A849245294575%3Aandroid%3A17045a6282e9ba9ab4301a&gmp_app_id=1%3A849245294575%3Aandroid%3A17045a6282e9ba9ab4301a&apm_app_type=1&lite=0&app_wp_code=ca-app-pub-9027478617840640&app_code=9535506442&num_ads=1&vpt=8&vfmt=18&vst=0&sdkv=o.260480999.244410000.1&sdmax=0&dmax=1&sdki=3c4d&stbg=1&bisch=false&blev=0.41&canm=true&_mv=85152130.com.android.vending&heap_free=22952032&heap_max=201326592&heap_total=56697760&wv_count=1&a_ad_mem=8000000000&a_avai=2426978304&a_total=4110749696&a_threshold=226492416&a_is_low_mem=false&runtime_avai_processors=4&advertised_mem_tier=6&avail_mem_tier=4&avail_proc_tier=3&rdps=4500&session_idl=20&eo_idl=36&eo_id_tsl=10&is_lat=false&rdidl=36&idtypel=4&blob=ABPQqLGyGdWgnKVO9yp3KC0KqDzG99j5XaYslgMJ2bsVmW7TD23HbH3wBiKWM163-nNTC39faMyH-eeWPdblVHrIXBsLWwB52h0czsAwEUxrbcW6My5YTN5Xn8JmCX098MAGN6cpEkH4010tIkqHFKVjxnFnzd0rCM4eK_EHvms0Fi5LlwBcEiO52PXswgmdufcQ3Nmw-CLzWxW6GT_sVNiCyeqyQaomNHLF2erq7NFCekTPONLrKgNng6pHIHVcQm57wmW3e6Q3RzB78WLj3RUdb7DDAYT8P6ZAZyjmx0sQfi5HbHH93RDI5ZnbwjWhlFUNPSbbyArRSW-IU5yCH72c8X6FKEe0CX37lUvUzF3RSWFddaYQ4r3BEFvYAoRHuqPqMchVZXyeQmYt8DL0WPPWwnybxkwtvaFsrJoj_yvKDlpzJ7jog5edYbAB1w&capsbf=7FFFFFEE&jsv=sdk_20190107_RC02-production-sdk_20260520_RC00"
-
-# কুকিজ সরিয়ে ফেলা হয়েছে যাতে গুগল বুঝতে না পারে।
-GOOGLE_HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Linux; Android 15; sdk_gphone64_x86_64 Build/AE3A.240806.036; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/148.0.7778.120 Mobile Safari/537.36 (Mobile; afma-sdk-a-v260480999.244410000.1)",
-    "X-Requested-With": "com.m2e.mobile",
-    "Accept-Encoding": "gzip, deflate",
-    "Referer": "https://googleads.g.doubleclick.net/",
-    "Connection": "Keep-Alive"
-}
-
-# =========================================================================
-# HELPER FUNCTIONS
-# =========================================================================
+# আপনার দেওয়া অরিজিনাল অ্যাড লিংক এবং কুকিজ
+DEFAULT_AD_URL = "https://googleads.g.doubleclick.net/mads/gma?submodel=sdk_gphone64_x86_64&adid_p=1&format=interstitial_mb&ini_pn=com.android.vending&ins_pn=com.android.vending&omid_v=a.1.5.2-google_20241009&client_purpose_one=true&dv=260480602&ev=23.6.0&gl=US&hl=en&js=afma-sdk-a-v260480999.244410000.1&lv=244410203&ms=CpgECoACKrBM0xB65xLcfKKUUNBRdQrRSSnKM5q33W3Rno1x7YXgQuyO29TZiieb9JHljSFyu3KaBD1cWyc5znE8zlF6grRJH4yzHz1M98-phMmdIeEPh7D2sR8hnkzi2v9526ZCvu0f5hnAuMwQcMH1EPA4tau9YROnTy3tMxLeQ2_YHxMMKWnbHD7DaItGYZpWUlNsJfnMhF9yVtIjcwiwRQshGpcTmM0ej1VO19P7ftW_kNnuMo99cuw_tejLzuKWBYFdepUFMdn8ve8sEshCSK_3ImHeln9JfRnFJ1vuVoPi1BxweXtJiCa9qY9o4sf-uWIm0aXlC2FcB0ibUr7qa2t-FAqAAh7NaFqVfQdJyoFCJWZUV7EGKmR8M-gSWzTHFNyUk4uif0z7EkZpHl4y78aHe_xfB8xwsqvl80VURdp1nRMa0MftZdgyPowdUbI9CyABv1VYHH_aP1AXwLJBKwjZxRux4Iz77UCMm1x0NmwhLPnlXJeFKC-329jAY4lHjcZ4DFczMFtt8j_vhO93rOusW_Ol7Q2uZGd_Um0CT1uV46o8bVSqZc35w_49SqGqiUKCayLq7uSGxv8-AqB-IsrVecNu9JIpCURFXVMRLcw8fbJP6xZ1ttzsjvgfvXBOKt1wpHJu-TArTBoTAxNBgY0ruKSpNVCzDkT_aYb9nCn3Y9-odIoSEO96QPNdRUBSHYFCwCc2GnQSmAQKgAKG9kguj6rc6JnqClGA11qHVt_GjKrOg_sjpO-CyHbF9iD-SflvbjkSb5mr65ZI-O1cCE4rj1EGGNQI9gobZLFvb07g_L88JpPZ_0HRCpNoVlgxr_TFYh5tufV7TCbHNFaVl9UWzBqvgbNr-4Vu_cAz0yJF3r2LA61fcDIXdhBIUqBcQfetYAzeoez4X_LYcgzYHV6DCODckYfj5BCj70-XyFXJh4Z-HhzQj6U5gD-1Cqt_Wz2Rr8GyUdzXRd_qtE7vek6OaMtTpjGzPy34dU6c1dlh_Gy9uT-iTylH_CU9KZoH39IFDnlCMsBwYI3jlPTAxfx56ToTIil_pFJnF73kCoACijWeZL6EluqVgSuoE5qUsRmlMTigQgSmQEsm6A96GxWTSu5OAthr8EfdF5pX1VZ1z7cYv7g6OWKT_M-F9H1atRx8e-qqwCoHWvQkMvW_7Lg8Sw7qaqDBDzbJ_L-YAhOKXaMw9gi0iSb_lc1mXqDXjOlYUutk0CVMCBJw951F-qEnGXRhAQyqG0y0BB6p7_lM9Bx5H8DRcjUzpUx69GjseaXdtSFn7zZTN1ufGjfdh4naxAyrcPwo6D3PpVSOFlMJkCmFXGnJzL8RgRpXwfuI91PzaW0YzKi2Y8rRzz0Us4iP99wHnmpsH2PecUDuISmahD-NfQCxUK5PFCgzmZ6CnRIQOO-0XSf0RqHDthMq1aBNLg&mv=85101930.com.android.vending&lft=1&vnm=1.2.5&plbs=0&plcs=0&risd=1&u_sd=2&request_id=1475162851&sam_b=24&sam_l=0&sam_r=0&sam_t=24&target_api=35&carrier=310260&request_agent=Flutter-GMA-5.3.1&fbs_aeid=-1763672715495716590&fbs_aiid=ed84d026b2efb0c47b9e7545b45685cf&seq_num=65&eid=318500618%2C318486317%2C318491267%2C95389098%2C318509511%2C318514156%2C95388544%2C318483611%2C318484496%2C318484801%2C318526144&guci=0.0.0.0.0.0.0.0&adtest=on&sdk_apis=7%2C8&omid_p=Google%2Fafma-sdk-a-v260480999.244410000.1&u_w=360&u_h=640&msid=com.m2e.mobile&an=123.android.com.m2e.mobile&u_audio=4&net=wi&u_so=p&rbv=1&loeid=44766145%2C318502924&preqs_in_session=2&preqs=64&time_in_session=868530&pcc=0&dload=18229&sst=1777580280000&output=html&region=mobile_app&u_tz=360&client=ca-app-pub-9027478617840640&slotname=9952810315&gsb=wi&apm_app_id=1%3A849245294575%3Aandroid%3A17045a6282e9ba9ab4301a&gmp_app_id=1%3A849245294575%3Aandroid%3A17045a6282e9ba9ab4301a&apm_app_type=1&lite=0&app_wp_code=ca-app-pub-9027478617840640&app_code=9535506442&num_ads=1&vpt=8&vfmt=18&vst=0&sdkv=o.260480999.244410000.1&sdmax=0&dmax=1&sdki=3c4d&stbg=1&bisch=false&blev=0.41&canm=true&_mv=85101930.com.android.vending&heap_free=445936&heap_max=201326592&heap_total=122484208&wv_count=4&advertised_mem_tier=0&avail_mem_tier=0&avail_proc_tier=0&rdps=11650&_cv=261434038&session_idl=20&eo_idl=36&eo_id_tsl=10&is_lat=false&rdidl=36&idtypel=4&blob=ABPQqLEabfpQcA59MgaPX1wtuBt_y7faAofi3bbFnsTYMjvMHAol2Pfu2xBE1dyari8Tpukq3mJ6d3C43sBjZa9dgkovrTzr_REfOnLqNH3LNQqxMcy0HLPBUgNXIleKhnv2eaJhmmL4DQtRAjKR-LSq1ug7tFIY2Jds7YRFkzFQNsJw_gCr_lEBIqPPzZlugiqMctfkSbWSXvkrxRan0zjBb1s0aRHee0rkPybj_jg9vB6BkZhiGUU7DT0hkf8iCVDQvT8TLi0fDYWnxDMOhsdV2K9eGbkv7QhZkIdta3q0kpaCDeWJy_LB3KzUu__ZZbtEiCEOEmhSjMm3nJzntJoogPuVKkYOT116k0GGgrW1ZjVBOYOX1CNkjdj27UIc4tAyEufZUtpeQI4bYb6EIcnpFw_GBoZ759M6mUNj_z8ROzDFs9VCZiWq1nLxGg&capsbf=7FFFFFEE&mr_itag=4509016882487189237_140&jsv=sdk_20190107_RC02-production-sdk_20260423_RC00"
+DEFAULT_COOKIE = "IDE=AHWqTUmv5tx0LM4018aYpaP87TuE4_YOMKmgDrU0rj4CuPJY3-vPkfmvJjZIP7j2yWE"
+DEFAULT_DRT = "CqwCCqcCRFNJRD1BSUNvaVlQRmgyY3gyaUpxMFNuZnMyVXM2SzMycWd2WTJmUDh6Q2hQdEdqV2NaVTZYQ216WjBUczZnUm9XTGJ6RzFIM2J3SEtNcUc2V3VXWnRCcEtaUTY5NXYzb3NRRVg5dVJ0bjhONkRBazJ4Tnhvckx3bU5PRUdJdXBHNnZQREFyYnZ3aDhIQmp3V1M5NWNRWTg4WnYxakIwLVVRZ1dqY1A2bmEtb1l0NUtMR216a2NGUHNzOW1Ca2lGRGNNWFhqMlJPek9BMy10M191ZEtoMVRwUnQ0UGpOaXk1OFBPQTFpZ2hIdnFzbTV5ZEMtdVRJYVlXaWVuY1dqWVdGUnFTdEZyOGJJTElqZURZcEFtdS1nOFlBYnNSX0FyZWlnNkZhURgB"
 
 def log_msg(email, msg, symbol="ℹ️"):
+    """গিটহাবের জন্য Flush=True যুক্ত ক্লিন লগিং ফাংশন"""
     current_time = datetime.datetime.now().strftime('%H:%M:%S')
     print(f"[{current_time}] [{email}] {symbol} {msg}", flush=True)
 
@@ -54,22 +42,21 @@ def load_accounts():
         for line in f.readlines():
             line = line.strip()
             if not line: continue
+            
             parts = [p.strip() for p in line.split("|")]
             if len(parts) >= 2 and parts[0].isdigit():
                 accounts.append({"uid": parts[0], "email": parts[1]})
+                
     return accounts
 
 def load_proxies():
     proxies = []
     if not os.path.exists(PROXY_FILE):
-        print(f"⚠️ '{PROXY_FILE}' পাওয়া যায়নি। প্রক্সি ছাড়া চললে গুগল রিওয়ার্ড নাও দিতে পারে!", flush=True)
         return proxies
-        
     with open(PROXY_FILE, "r", encoding="utf-8") as f:
         for line in f.readlines():
             line = line.strip()
             if not line: continue
-            # Format: host:port:user:pass
             parts = line.split(":")
             if len(parts) == 4:
                 host, port, user, pw = parts
@@ -78,188 +65,97 @@ def load_proxies():
             elif len(parts) == 2:
                 proxy_url = f"http://{parts[0]}:{parts[1]}"
                 proxies.append({"http": proxy_url, "https": proxy_url})
-    
-    print(f"✅ {len(proxies)} টি প্রক্সি লোড করা হয়েছে।", flush=True)
     return proxies
 
-def get_dynamic_gma_url():
-    req_id = str(random.randint(1000000000, 2000000000))
-    seq_num = str(random.randint(20, 150))
-    fbs_aeid = str(random.randint(1000000000000000000, 9000000000000000000))
-    return GMA_URL_BASE.replace("{REQ_ID}", req_id).replace("{SEQ_NUM}", seq_num).replace("{FBS_AEID}", fbs_aeid)
-
 def get_atok_data(uid):
-    """Atok এর লুপের জন্য সঠিক MISSION_AD পেলোড"""
+    """আপনার অরিজিনাল লজিক (MISSION_AD)"""
     now = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%f")
     data = {"key": f"{uid}{now}", "type": "MISSION_AD", "missionType": "VIDEO"}
-    return urllib.parse.quote(json.dumps(data, separators=(',', ':')))
+    return urllib.parse.quote(json.dumps(data))
 
-def decode_html_content(html_str):
-    return html_str.replace(r'\x3c', '<').replace(r'\x3e', '>').replace(r'\x3d', '=').replace(r'\x22', '"').replace(r'\x26', '&').replace(r'\x27', "'")
-
-def format_url(url, uid):
-    current_time_ms = str(int(time.time() * 1000))
-    atok_cdata = get_atok_data(uid)
-    
-    url = url.replace("@gw_rwd_userid@", str(uid))
-    url = url.replace("@gw_tmstmp@", current_time_ms)
-    url = url.replace("@gw_rwd_custom_data@", atok_cdata)
-    url = url.replace("@gw_adnetstatus@", "0")
-    url = url.replace("@gw_ttr@", "245")
-    url = url.replace("@gw_mpe@", "0")
-    
-    url = url.replace("%5BVIEWABILITY%5D", "1").replace("%5BGOOGLE_VIEWABILITY%5D", "1")
-    url = url.replace("[VIEWABILITY]", "1").replace("[GOOGLE_VIEWABILITY]", "1")
-    url = url.replace("[ACTTYPE]", "1").replace("%5BAD_MT%5D", "12")
-    url = url.replace("%5BAD_TOS%5D", "10000,0,0,0,0").replace("%5BAD_WAT%5D", "10")
-    url = url.replace("%5BFINAL%5D", "1")
-    return url
-
-def get_xml_urls(event_name, html):
-    pattern = r'<Tracking event="' + event_name + r'">\s*<!\[CDATA\[(.*?)\s*\]\]>\s*</Tracking>'
-    return re.findall(pattern, html)
-
-def get_video_duration(html):
-    match = re.search(r'<Duration>(.*?)</Duration>', html)
-    if match:
-        time_str = match.group(1).strip()
-        try:
-            h, m, s = time_str.split(':')
-            return int(h) * 3600 + int(m) * 60 + float(s)
-        except: pass
-    return 30.0
-
-def send_ad_pings(session, url_list, uid, proxy=None):
-    if not url_list: return False
-    success = False
-    for url in url_list:
-        if not url: continue
-        clean_url = format_url(url, uid)
-        try:
-            res = session.get(clean_url, timeout=10, proxies=proxy)
-            if res.status_code in [200, 204]:
-                success = True
-        except Exception: pass
-    return success
-
-# =========================================================================
-# 🤖 কোর বট ওয়ার্কার
-# =========================================================================
 def run_bot(account, proxy_list):
     uid = account['uid']
     email = account['email']
     success_count = 0
     
     session = requests.Session()
-    session.headers.update(GOOGLE_HEADERS)
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Linux; Android 15)',
+        'X-Requested-With': 'com.m2e.mobile',
+        'Cookie': DEFAULT_COOKIE,
+        'X-Afma-Drt-V2-Cookie': DEFAULT_DRT,
+        'Accept-Encoding': 'gzip'
+    }
 
-    # যদি প্রক্সি লিস্ট থাকে তবে র‍্যান্ডম প্রক্সি নির্বাচন করা হবে
-    proxy = random.choice(proxy_list) if proxy_list else None
-
-    log_msg(email, f"রিওয়ার্ড যুক্ত করার বট চালু হয়েছে (Proxy: {'Yes' if proxy else 'No'})", "🚀")
+    log_msg(email, "রিওয়ার্ড যুক্ত করার বট চালু হয়েছে", "🚀")
 
     while success_count < REWARD_LIMIT_PER_ACCOUNT:
-        dynamic_url = get_dynamic_gma_url()
+        proxy = random.choice(proxy_list) if proxy_list else None
+        
         try:
-            response = session.get(dynamic_url, verify=False, timeout=15, proxies=proxy)
-            if response.status_code != 200:
-                time.sleep(5)
-                continue
-
-            ad_data = response.json()
-            network = ad_data.get('ad_networks', [{}])[0]
-            ad_info = network.get('ad', {})
-            ad_html = decode_html_content(ad_info.get('ad_html', ''))
-            
-            fill_urls = network.get('fill_urls', [])
-            impression_urls = network.get('impression_urls', [])
-            video_start_urls = network.get('video_start_urls', [])
-            video_complete_urls = network.get('video_complete_urls', [])
-            reward_urls = network.get('video_reward_urls', [])
-            
-            if not reward_urls:
-                time.sleep(2)
-                continue
-
-            impression_xml = re.findall(r'<Impression><!\[CDATA\[(.*?)\]\]></Impression>', ad_html)
-            start_xml = get_xml_urls("start", ad_html)
-            q25 = get_xml_urls("firstQuartile", ad_html)
-            q50 = get_xml_urls("midpoint", ad_html)
-            q75 = get_xml_urls("thirdQuartile", ad_html)
-            complete_xml = get_xml_urls("complete", ad_html)
-            active_views = re.findall(r'<Tracking event="(?:viewable_impression|measurable_impression|fully_viewable_audible_half_duration_impression)"><!\[CDATA\[(.*?)\]\]></Tracking>', ad_html)
-            
-            ad_duration = get_video_duration(ad_html)
-            split_time = ad_duration / 4.0
-
-            # Pings & Watch Time Simulation
-            send_ad_pings(session, fill_urls, uid, proxy)
-            send_ad_pings(session, impression_urls, uid, proxy)
-            send_ad_pings(session, impression_xml, uid, proxy)
-
-            time.sleep(1)
-            send_ad_pings(session, video_start_urls, uid, proxy)
-            send_ad_pings(session, start_xml, uid, proxy)
-            send_ad_pings(session, active_views, uid, proxy)
-
-            time.sleep(split_time)
-            send_ad_pings(session, q25, uid, proxy)
-            
-            time.sleep(split_time)
-            send_ad_pings(session, q50, uid, proxy)
-            
-            time.sleep(split_time)
-            send_ad_pings(session, q75, uid, proxy)
-            
-            time.sleep(split_time)
-            send_ad_pings(session, complete_xml, uid, proxy)
-            send_ad_pings(session, video_complete_urls, uid, proxy)
-
-            time.sleep(1.5)
-            
-            # Request Reward
-            if send_ad_pings(session, reward_urls, uid, proxy):
-                success_count += 1
+            response = session.get(DEFAULT_AD_URL, headers=headers, proxies=proxy, verify=False, timeout=20)
+            if response.status_code == 200:
+                data = response.json()
+                ad = data['ad_networks'][0]
+                imp_url = ad['ad']['impression_urls'][0]
+                start_url = ad['video_start_urls'][0]
+                reward_url = ad['video_reward_urls'][0]
                 
-                # শুধুমাত্র প্রতি ৫০টা কমপ্লিট হলে মেসেজ প্রিন্ট করবে
-                if success_count % 50 == 0:
-                    log_msg(email, f"রিওয়ার্ড যুক্ত হয়েছে! [{success_count}/{REWARD_LIMIT_PER_ACCOUNT}]", "✅")
-
+                # ইম্প্রেশন এবং স্টার্ট পিং
+                session.get(imp_url, headers=headers, proxies=proxy, verify=False, timeout=15)
+                session.get(start_url, headers=headers, proxies=proxy, verify=False, timeout=15)
+                
+                # আপনার অরিজিনাল ৬-৮ সেকেন্ডের বিরতি
+                time.sleep(random.randint(6, 8))
+                
+                ts = str(int(time.time() * 1000))
+                cdata = get_atok_data(uid)
+                claim_url = reward_url.replace("@gw_rwd_userid@", uid).replace("@gw_tmstmp@", ts).replace("@gw_rwd_custom_data@", cdata)
+                
+                # রিওয়ার্ড ক্লেইম
+                claim_res = session.get(claim_url, headers=headers, proxies=proxy, verify=False, timeout=15)
+                
+                if claim_res.status_code == 200:
+                    success_count += 1
+                    # শুধুমাত্র ৫০ টি কমপ্লিট হলে লগ প্রিন্ট করবে
+                    if success_count % 50 == 0:
+                        log_msg(email, f"রিওয়ার্ড যুক্ত হয়েছে! [{success_count}/{REWARD_LIMIT_PER_ACCOUNT}]", "✅")
+                else:
+                    pass
+            else:
+                time.sleep(3)
         except Exception:
-            time.sleep(5)
+            time.sleep(3)
+            
+        time.sleep(random.randint(2, 4))
         
-        # পরবর্তী অ্যাডের আগে রেন্ডম বিরতি
-        delay = random.randint(MIN_AD_DELAY, MAX_AD_DELAY)
-        time.sleep(delay)
-        
-    log_msg(email, "এই অ্যাকাউন্টের লিমিট শেষ হয়েছে, বট বন্ধ হচ্ছে।", "🏁")
+    log_msg(email, "এই অ্যাকাউন্টের লিমিট শেষ হয়েছে।", "🏁")
 
-# =========================================================================
-# মাল্টি-থ্রেডিং ম্যানেজার
-# =========================================================================
 def worker_thread(q, proxy_list):
+    """Queue থেকে অ্যাকাউন্ট নিয়ে কাজ করবে"""
     while not q.empty():
         try:
             account = q.get_nowait()
         except queue.Empty:
             break
-        
         run_bot(account, proxy_list)
         q.task_done()
 
 def main():
     print("="*60, flush=True)
-    print("🚀 ATOK PRO MULTI-BOT V3 (FINAL/PROXY SUPPORT) 🚀", flush=True)
+    print("🚀 ATOK 24/7 GITHUB ACTIONS BOT 🚀", flush=True)
     print("="*60, flush=True)
     
     accounts = load_accounts()
     proxies = load_proxies()
 
     if not accounts:
-        print("❌ স্ক্রিপ্ট বন্ধ হচ্ছে।", flush=True)
+        print("❌ কোনো অ্যাকাউন্ট পাওয়া যায়নি। স্ক্রিপ্ট বন্ধ হচ্ছে।", flush=True)
         return
         
     print(f"✅ মোট {len(accounts)} টি অ্যাকাউন্ট লোড করা হয়েছে।", flush=True)
+    if proxies:
+        print(f"✅ মোট {len(proxies)} টি প্রক্সি লোড করা হয়েছে।", flush=True)
     print(f"✅ একসাথে {MAX_CONCURRENT_BOTS} টি অ্যাকাউন্ট চলবে।", flush=True)
     print("="*60, flush=True)
 
